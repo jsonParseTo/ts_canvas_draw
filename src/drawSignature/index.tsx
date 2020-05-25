@@ -9,7 +9,7 @@ function midPointBtw(p1: any, p2: any) {
     y: p1.y + (p2.y - p1.y) / 2
   };
 }
-
+const DEVICE_PIXEL_RATIO = 2;
 interface DrawSignatureProps {
     clearWidth: number; //橡皮擦的擦拭宽度，值越大擦的越多
     canvasWidth: string;
@@ -22,7 +22,7 @@ interface DrawSignatureState {
 
 class DrawSignature extends React.Component<DrawSignatureProps, DrawSignatureState> {
   static defaultProps = {
-    clearWidth: 10,
+    clearWidth: 5,
   }
 
   isDrawing = false; // 是否为绘制状态，ture：是，false：不是（默认值）
@@ -43,12 +43,11 @@ class DrawSignature extends React.Component<DrawSignatureProps, DrawSignatureSta
     let width = this.canvasRef.current.width,height=this.canvasRef.current.height;
     this.canvasRef.current.style.width = width + "px";
     this.canvasRef.current.style.height = height + "px";
-    this.canvasRef.current.height = height * window.devicePixelRatio;
-    this.canvasRef.current.width = width * window.devicePixelRatio;
-    this.ctx.scale(2, 2);
+    this.canvasRef.current.height = height * DEVICE_PIXEL_RATIO;
+    this.canvasRef.current.width = width * DEVICE_PIXEL_RATIO;
+    this.ctx.scale(DEVICE_PIXEL_RATIO, DEVICE_PIXEL_RATIO);
     console.log(this.canvasRef.current.height, this.canvasRef.current.width);
     this.ctx.fillStyle = "#ccc";
-    this.ctx.fillRect(0, 0, this.canvasRef.current.width, this.canvasRef.current.height);
   }
 
   getPositionCommon = (e: any) => {
@@ -91,7 +90,7 @@ class DrawSignature extends React.Component<DrawSignatureProps, DrawSignatureSta
         this.ctx.lineCap = 'round';
         this.ctx.lineJoin = 'round';
         this.ctx.lineWidth = 2;
-        this.ctx.lineTo(x, y);
+        this.ctx.quadraticCurveTo(preDrawPoint.x, preDrawPoint.y, x, y);
         this.ctx.stroke();
       }
     }
@@ -103,7 +102,7 @@ class DrawSignature extends React.Component<DrawSignatureProps, DrawSignatureSta
 
     if (this.isDrawing) {
 
-      // this.ctx.closePath();
+      this.ctx.closePath();
 
       // 每次操作画布都要保存快照，后面撤销使用
       this.canvasHistory.push(this.saveCanvasToImage());
@@ -129,7 +128,7 @@ class DrawSignature extends React.Component<DrawSignatureProps, DrawSignatureSta
         canvasPic.src = currentCanvasIMage;
         canvasPic.addEventListener('load', () => {
           this.ctx.clearRect(0, 0, this.canvasRef.current.width, this.canvasRef.current.height);
-          this.ctx.drawImage(canvasPic, 0, 0);
+          this.ctx.drawImage(canvasPic, 0, 0, this.canvasRef.current.width / DEVICE_PIXEL_RATIO, this.canvasRef.current.height / DEVICE_PIXEL_RATIO);
         });
       } else {
         this.clearCanvas();
@@ -138,7 +137,7 @@ class DrawSignature extends React.Component<DrawSignatureProps, DrawSignatureSta
   }
 
   saveCanvasToImage = () => {
-    return this.canvasRef.current.toDataURL();
+    return this.canvasRef.current.toDataURL('image/jpeg');
   }
 
   returnDrawImage = () => {
@@ -156,10 +155,9 @@ class DrawSignature extends React.Component<DrawSignatureProps, DrawSignatureSta
 
   render() {
     const { isClearing } = this.state;
+    const { canvasWidth, canvasHeight } = this.props;
 
     return (
-      <div className="content">
-        <div style={{ height: '300px', width: '100%', background: '#999' }} />
         <div style={{ position: 'relative', overflow: 'hidden', touchAction: 'none'}}>
           <canvas
             ref={this.canvasRef}
@@ -171,8 +169,8 @@ class DrawSignature extends React.Component<DrawSignatureProps, DrawSignatureSta
             onMouseMove={this.drawMove}
             onMouseUp={this.drawEnd}
             onMouseOut={this.drawEnd}
-            width="600px"
-            height="300px"
+            width={canvasWidth}
+            height={canvasHeight}
             style={{ userSelect: 'none' }}
           />
           <div onClick={this.clearCanvas}>清空</div>
@@ -180,8 +178,6 @@ class DrawSignature extends React.Component<DrawSignatureProps, DrawSignatureSta
           <div onClick={this.toggleClearStatus}  style={{ color: isClearing ? '#3692f5': '#000' }}>橡皮擦</div>
           <div onClick={this.returnDrawImage}>保存图片</div>
         </div>
-        <div style={{ height: '1300px', width: '100%', background: '#999' }}></div>
-      </div>
     )
   }
 }
